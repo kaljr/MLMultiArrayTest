@@ -29,13 +29,24 @@ struct MLMultiTest {
     }
     
     // This is an exploration of how to work with MLMultiArray and its .dataPointer
-    // property. The documentation on linear offset indexing and standard array
-    // indexing did not seem to be working for me on a 4 dimensional CoreML result.
+    // property. This deals with linear offset indexing and standard array indexing
+    // when working on a 4 dimensional CoreML result. The MLMultiArray is row-major,
+    // meaning that if there are 4 (16x9) matrices, the first element [0,0,0,0] is
+    // the top left corner of the first matrix. This is equal to the linear offset
+    // position of 0 (pointer[0]). The next element on that first slice is [0,0,1,0]
+    // but the linear offset is 4 because row-major ordering counts the top-left
+    // corner of each matrix "slice" before counting the next element of the first.
+    // Good resource:
+    // https://eli.thegreenplace.net/2015/memory-layout-of-multi-dimensional-arrays
     func test() {
         // Define the desired array dimensions and create MLMultiArray
         let dims = [1,16,9,4] as [NSNumber]
         let numEls = 16 * 9 * 4 - 1
         let multiArr = try! MLMultiArray(shape: dims, dataType: .double)
+        
+        // Show the array strides. Multiplying these by the desired [i,j,k,l]
+        // will yield the correct linear offset for the pointer.
+        print("Strides:", multiArr.strides)
         
         // Get a pointer to the multiArray’s contents.
         let pointer = UnsafeMutablePointer<Double>(OpaquePointer(multiArr.dataPointer))
